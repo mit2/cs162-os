@@ -145,7 +145,11 @@ int shell(int argc, char *argv[]) {
       cmd_table[fundex].fun(&tokens[1]);											// Alex#: call func form cmd_table
     } else {
       /* REPLACE this to run commands as programs. */
-      fprintf(stdout, "This shell doesn't know how to run programs.\n");
+      //fprintf(stdout, "This shell doesn't know how to run programs.\n");
+	  int status;
+      pid_t pid = fork();
+      if(pid == 0) execv((char *)tokens[0], (char *)tokens);
+      wait(&status);
     }
 
     if (shell_is_interactive)
