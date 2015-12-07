@@ -29,9 +29,11 @@ pid_t shell_pgid;
 
 int cmd_quit(tok_t arg[]);
 int cmd_help(tok_t arg[]);
+int cmd_pwd(tok_t arg[]);
+int cmd_cd(tok_t arg[]);
 
 /* Built-in command functions take token array (see parse.h) and return int */
-typedef int cmd_fun_t(tok_t args[]);
+typedef int cmd_fun_t(tok_t args[]);												// Alex: ?
 
 /* Built-in command struct and lookup table */
 typedef struct fun_desc {
@@ -43,6 +45,8 @@ typedef struct fun_desc {
 fun_desc_t cmd_table[] = {
   {cmd_help, "?", "show this help menu"},
   {cmd_quit, "quit", "quit the command shell"},
+  {cmd_pwd, "pwd", "print current working directory path"},
+  {cmd_cd, "cd", "change to other directory"},
 };
 
 /**
@@ -54,6 +58,33 @@ int cmd_help(tok_t arg[]) {
   }
   return 1;
 }
+
+/**
+ * Prints the current working directory to standard output							// Alex#: code
+ */
+int cmd_pwd(tok_t arg[]) {
+  int status;
+  pid_t pid = fork();
+  if(pid == 0) execv("/bin/pwd", (char *)(--arg));
+  wait(&status);
+  return(WEXITSTATUS(status));
+}
+
+/**
+ * cd that takes one argument, a directory name, and changes the current
+ * working directory to that directory.												// Alex#: code
+ */
+int cmd_cd(tok_t arg[]) {
+  int status;
+  pid_t pid = fork();
+  if(pid == 0) execv("/bin/cd", (char *)--arg);
+  wait(&status);
+  return(WEXITSTATUS(status));
+}
+
+
+
+
 
 /**
  * Quits this shell
@@ -109,9 +140,9 @@ int shell(int argc, char *argv[]) {
 
   while ((input_bytes = freadln(stdin))) {
     tokens = get_toks(input_bytes);
-    fundex = lookup(tokens[0]);
+    fundex = lookup(tokens[0]);														// Alex# fundex -- get 1st input token and return func index in cmd_table
     if (fundex >= 0) {
-      cmd_table[fundex].fun(&tokens[1]);
+      cmd_table[fundex].fun(&tokens[1]);											// Alex#: call func form cmd_table
     } else {
       /* REPLACE this to run commands as programs. */
       fprintf(stdout, "This shell doesn't know how to run programs.\n");
