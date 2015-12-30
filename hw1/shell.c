@@ -182,7 +182,7 @@ int shell(int argc, char *argv[]) {
       //fprintf(stdout, "This shell doesn't know how to run programs.\n");
 	  int status;
       pid_t pid = fork();
-      if(pid == 0) execv((char *)tokens[0], (char *const*)tokens);
+      if(pid == 0) execv(tokens[0], tokens);
       wait(&status);
     }
 
