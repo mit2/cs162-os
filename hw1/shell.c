@@ -63,11 +63,24 @@ int cmd_help(tok_t arg[]) {
  * Prints the current working directory to standard output							// Alex#: code
  */
 int cmd_pwd(tok_t arg[]) {
+  /* Quick version 1
   int status;
   pid_t pid = fork();
-  if(pid == 0) execv("/bin/pwd", (char *)(--arg));
+  if(pid == 0) execv("/bin/pwd", (char *const*)(--arg));									// Alex#: doing --arg birng to the begining of vector as need
+																					// to pass full args vector to commnd
+																					// as for "cmd_table[fundex].fun(&tokens[1]);" bring 'tokens' to begin of array
   wait(&status);
-  return(WEXITSTATUS(status));
+  return(WEXITSTATUS(status));*/
+
+
+  /* Quick version 2 */
+  char *cwd = getcwd(NULL, 0);
+  if(cwd != NULL){
+	  printf("%s\n", cwd);
+	  return 0;
+  }else
+	  return -1;
+
 }
 
 /**
@@ -75,11 +88,32 @@ int cmd_pwd(tok_t arg[]) {
  * working directory to that directory.												// Alex#: code
  */
 int cmd_cd(tok_t arg[]) {
+  /* Version 1: This one not worked out
   int status;
   pid_t pid = fork();
-  if(pid == 0) execv("/bin/cd", (char *)--arg);
+  if(pid == 0) execv("/bin/cd", (char *const*)--arg);
   wait(&status);
-  return(WEXITSTATUS(status));
+  return(WEXITSTATUS(status));*/
+
+  /* Version 2: Did't changed cwd, looks like env vars is unique for each process
+  char *new_path = (char *)arg; ///															/// means my code
+  char *curr_path = getenv("PWD"); ///
+  //printf("envir var: %s\n", curr_path); /// ok
+  //printf("new_path var: %s\n", new_path[0]); /// ok
+  // Doing simple verison of 'cd' b/c luck of time
+  printf("envir var: %s\n", getenv("PWD")); /// ok
+  setenv("PWD", "/home/vagrant", 1);
+  printf("envir var: %s\n", getenv("PWD")); /// ok
+  return;*/
+
+  /* Version 3: */
+  int chdir_status = chdir(*arg);													// dererence arg, as was passed as adress
+  if(chdir_status){
+	  printf("Error to change directory: %d\n", chdir_status);
+	  return chdir_status;
+  }
+  else
+	  return chdir_status;
 }
 
 
@@ -148,7 +182,7 @@ int shell(int argc, char *argv[]) {
       //fprintf(stdout, "This shell doesn't know how to run programs.\n");
 	  int status;
       pid_t pid = fork();
-      if(pid == 0) execv((char *)tokens[0], (char *)tokens);
+      if(pid == 0) execv((char *)tokens[0], (char *const*)tokens);
       wait(&status);
     }
 
