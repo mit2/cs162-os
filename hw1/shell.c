@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 #include <sys/types.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
+#include <dirent.h>  ///
 
 #include "io.h"
 #include "parse.h"
@@ -116,10 +118,6 @@ int cmd_cd(tok_t arg[]) {
 	  return chdir_status;
 }
 
-
-
-
-
 /**
  * Quits this shell
  */
@@ -137,6 +135,36 @@ int lookup(char cmd[]) {
   }
   return -1;
 }
+
+/**
+ * Redirect the shell stream
+ */
+int stream_redirect(tok_t *files, tok_t redir){
+	FILE *ifp, *ofp;
+	int c;
+	if(strcmp(redir, "<") == 0){
+		while(*files != NULL){
+			if((ifp = fopen(*files++, "r")) == NULL){
+				printf("Can't open the file: %s\n", *files);
+				return -1;
+			}else{
+				while((c = getc(ifp)) != EOF) putc(c, stdout);
+				fclose(ifp);
+			}
+		}
+	}else{
+		if((ofp = fopen(*files, "w")) == NULL){
+				printf("Can't open the file: %s\n", *files);
+				return -1;
+			}else{
+				while((c = getc(stdin)) != EOF) putc(c, ofp);	// Ctrl-D tells the terminal that it should register a EOF on standard input
+				printf("WRITTEN TO FILE\n");
+				fclose(ofp);
+			}
+	}
+	return 0;
+}
+
 
 /**
  * Intialization procedures for this shell
@@ -180,10 +208,44 @@ int shell(int argc, char *argv[]) {
     } else {
       /* REPLACE this to run commands as programs. */
       //fprintf(stdout, "This shell doesn't know how to run programs.\n");
-	  int status;
-      pid_t pid = fork();
-      if(pid == 0) execv(tokens[0], tokens);
-      wait(&status);
+	  DIR *dp; ///dp -> directory pointer
+	  struct dirent *dep; ///dep -- directory entry pointer
+	  const char *syspath = getenv("PATH"); ///
+	  const char delim[] = ":";
+	  char *path, *cpy, *buff;
+	  int found = 0;
+
+	  if(strcmp(tokens[0], "<")== 0 || strcmp(tokens[0], ">")== 0) stream_redirect(&tokens[1], tokens[0]);
+
+	  // Parse syspath string into tokens by ':' delim
+	  cpy = strdup(syspath);
+	  path = strtok(cpy, delim);
+	  while(path != NULL){
+		  if(!found){
+			  dp = opendir(path); ///
+			  if (dp != NULL){
+				  while (dep = readdir(dp)){
+					  if(strcmp(dep->d_name, tokens[0]) == 0){
+						  buff = malloc(strlen(path)+strlen(tokens[0]));	  // alloc buff for str to crated form two sustrings
+						  buff = strcpy(buff, path);
+						  buff = strcat(buff, "/");
+						  pid_t pid = fork();
+						  if(pid == 0) execv(strcat(buff,tokens[0]), tokens); // path + exec_image_name
+						  wait(&found);
+						  free(buff);
+						  break;
+					}
+				  }
+				 (void) closedir (dp);
+			  }
+			  else
+				perror ("Couldn't open the directory"); ///
+		  }
+		  if(found)
+			  break;
+		  else
+			  path = strtok(NULL, delim);
+	  }
     }
 
     if (shell_is_interactive)
@@ -193,3 +255,25 @@ int shell(int argc, char *argv[]) {
 
   return 0;
 }
+/*------------------------------------------------------------------------------
+
+int stream_redirect(FILE *stdin, FILE *stdout, char *tokens, char token){
+	FILE *ifp, *ofp;
+	int c;
+	if(token == '<'){
+		if(fp = fopen(*++tokens, "r") == NULL){
+			printf("Can't open the file: %s\n", *tokens);
+			return -1;
+		}else{
+			while((c = getc(fp) != EOF) putc(c, stdout);
+			fclose(fp);
+			return 0;
+		}
+
+	}else{
+		//....
+	}
+}
+*/
+
+
