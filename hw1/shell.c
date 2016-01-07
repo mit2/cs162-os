@@ -62,13 +62,13 @@ int cmd_help(tok_t arg[]) {
 }
 
 /**
- * Prints the current working directory to standard output							// Alex#: code
+ * Alex@: Prints the current working directory to standard output							
  */
 int cmd_pwd(tok_t arg[]) {
   /* Quick version 1
   int status;
   pid_t pid = fork();
-  if(pid == 0) execv("/bin/pwd", (char *const*)(--arg));									// Alex#: doing --arg birng to the begining of vector as need
+  if(pid == 0) execv("/bin/pwd", (char *const*)(--arg));							// Alex#: doing --arg birng to the begining of vector as need
 																					// to pass full args vector to commnd
 																					// as for "cmd_table[fundex].fun(&tokens[1]);" bring 'tokens' to begin of array
   wait(&status);
@@ -86,7 +86,7 @@ int cmd_pwd(tok_t arg[]) {
 }
 
 /**
- * cd that takes one argument, a directory name, and changes the current
+ * Alex@: cd that takes one argument, a directory name, and changes the current
  * working directory to that directory.												// Alex#: code
  */
 int cmd_cd(tok_t arg[]) {
@@ -137,7 +137,7 @@ int lookup(char cmd[]) {
 }
 
 /**
- * Redirect the shell stream
+ * Alex@: Redirect the shell stream
  */
 int stream_redirect(tok_t *files, tok_t redir){
 	FILE *ifp, *ofp;
@@ -226,13 +226,8 @@ int shell(int argc, char *argv[]) {
 			  if (dp != NULL){
 				  while (dep = readdir(dp)){
 					  if(strcmp(dep->d_name, tokens[0]) == 0){
-						  buff = malloc(strlen(path)+strlen(tokens[0]));	  // alloc buff for str to crated form two sustrings
-						  buff = strcpy(buff, path);
-						  buff = strcat(buff, "/");
-						  pid_t pid = fork();
-						  if(pid == 0) execv(strcat(buff,tokens[0]), tokens); // path + exec_image_name
+						  launch_process(tokens[0], path, tokens);
 						  wait(&found);
-						  free(buff);
 						  break;
 					}
 				  }
@@ -256,24 +251,8 @@ int shell(int argc, char *argv[]) {
   return 0;
 }
 /*------------------------------------------------------------------------------
+...
 
-int stream_redirect(FILE *stdin, FILE *stdout, char *tokens, char token){
-	FILE *ifp, *ofp;
-	int c;
-	if(token == '<'){
-		if(fp = fopen(*++tokens, "r") == NULL){
-			printf("Can't open the file: %s\n", *tokens);
-			return -1;
-		}else{
-			while((c = getc(fp) != EOF) putc(c, stdout);
-			fclose(fp);
-			return 0;
-		}
-
-	}else{
-		//....
-	}
-}
 */
 
 

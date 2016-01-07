@@ -5,15 +5,27 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <termios.h>
+#include <string.h>
 
 #include "process.h"
 #include "shell.h"
+#include "parse.h"
+
 
 /**
  * Executes the program pointed by process name
  */
-void launch_process(char *process_name) {
+void launch_process(char *proc_name, char *path, tok_t *argv) {
   /** YOUR CODE HERE */
+	/* launch the process(proc_name, path) */
+	char *buff;
+	buff = malloc(strlen(path)+strlen(proc_name));	  // alloc buff for str to created form two sustrings
+	buff = strcpy(buff, path);
+	buff = strcat(buff, "/");
+	pid_t pid = fork();
+	if(pid == 0) execv(strcat(buff,proc_name), argv); // filename: path + exec_image_name
+	free(buff);
+						  
 }
 
 /**
