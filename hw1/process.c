@@ -17,13 +17,70 @@
  */
 void launch_process(char *proc_name, char *path, tok_t *argv) {
   /** YOUR CODE HERE */
-	/* launch the process(proc_name, path) */
+	int chld_ifd, chld_ofd, chld_errfd;
+	
 	char *buff;
 	buff = malloc(strlen(path)+strlen(proc_name));	  // alloc buff for str to created form two sustrings
 	buff = strcpy(buff, path);
 	buff = strcat(buff, "/");
 	pid_t pid = fork();
-	if(pid == 0) execv(strcat(buff,proc_name), argv); // filename: path + exec_image_name
+	pid_t pgid;
+	if(pid == 0){
+		if (shell_is_interactive){
+		/* Put the process into the process group and give the process group
+			the terminal, if appropriate.
+			This has to be done both by the shell and in the individual
+			child processes because of potential race conditions. */
+			pid = getpid ();
+			if (pgid == 0) pgid = pid;
+			setpgid (pid, pgid);
+			if (tcgetpgrp(shell_terminal) == shell_pgid)							// do check for fg, set chld get terminal
+				tcsetpgrp (shell_terminal, pgid);
+			/* Set the handling for job control signals back to the default. */
+			signal (SIGINT, SIG_DFL);
+			signal (SIGQUIT, SIG_DFL);
+			signal (SIGTSTP, SIG_DFL);
+			signal (SIGTTIN, SIG_DFL);
+			signal (SIGTTOU, SIG_DFL);
+			signal (SIGCHLD, SIG_DFL);
+
+			/* Set the standard input/output channels of the new process. */
+			if (chld_ifd != STDIN_FILENO)											// COULD BE ERR HERE ....
+			{
+			dup2 (chld_ifd, STDIN_FILENO);
+			close (chld_ifd);
+			}
+			if (chld_ofd != STDOUT_FILENO)
+			{
+			dup2 (chld_ofd, STDOUT_FILENO);
+			close (chld_ofd);
+			}
+			if (chld_errfd != STDERR_FILENO)
+			{
+			dup2 (chld_errfd, STDERR_FILENO);
+			close (chld_errfd);
+			}
+
+			/* Exec the new process. Make sure we exit. */
+			execv(strcat(buff,proc_name), argv); // filename: path + exec_image_name
+			perror ("execv");
+			exit (1);																// as chld trmdted return status to prnt
+		}
+	}else{
+		/* Parent */
+		if (shell_is_interactive){
+		/* Put the process into the process group and give the process group
+			the terminal, if appropriate.
+			This has to be done both by the shell and in the individual
+			child processes because of potential race conditions. */
+			//pid = getpid ();
+			pgid = pid;																// chld pid returned to prnt
+			setpgid (pid, pgid);													// set for chld proc own process group ID, become procgrp leader
+			if (tcgetpgrp(shell_terminal) == shell_pgid)							// do chek for fg in shell context! also
+				tcsetpgrp (shell_terminal, pgid);
+		}
+	}
+
 	free(buff);
 						  
 }

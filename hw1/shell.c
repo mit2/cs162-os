@@ -179,8 +179,22 @@ void init_shell() {
     while(tcgetpgrp(shell_terminal) != (shell_pgid = getpgrp()))
       kill(-shell_pgid, SIGTTIN);
 
-    /* Saves the shell's process id */
+	/* Ignore interactive job-control Signals */
+	signal (SIGINT, SIG_IGN);
+	signal (SIGQUIT, SIG_IGN);
+	signal (SIGTSTP, SIG_IGN);
+	signal (SIGTTIN, SIG_IGN);
+	signal (SIGTTOU, SIG_IGN);
+	signal (SIGCHLD, SIG_IGN);
+
+
+    /* Saves the shell's process id. Put shell in it's own process group. */
     shell_pgid = getpid();
+	if (setpgid (shell_pgid, shell_pgid) < 0)
+		{
+			perror ("Couldn’t put the shell in its own process group");
+			exit (1);
+		}
 
     /* Take control of the terminal */
     tcsetpgrp(shell_terminal, shell_pgid);
@@ -212,7 +226,7 @@ int shell(int argc, char *argv[]) {
 	  struct dirent *dep; ///dep -- directory entry pointer
 	  const char *syspath = getenv("PATH"); ///
 	  const char delim[] = ":";
-	  char *path, *cpy, *buff;
+	  char *path, *cpy;
 	  int found = 0;
 
 	  if(strcmp(tokens[0], "<")== 0 || strcmp(tokens[0], ">")== 0) stream_redirect(&tokens[1], tokens[0]);
@@ -224,10 +238,11 @@ int shell(int argc, char *argv[]) {
 		  if(!found){
 			  dp = opendir(path); ///
 			  if (dp != NULL){
-				  while (dep = readdir(dp)){
+				  while ((dep = readdir(dp))){
 					  if(strcmp(dep->d_name, tokens[0]) == 0){
 						  launch_process(tokens[0], path, tokens);
 						  wait(&found);
+						  tcsetpgrp (shell_terminal, shell_pgid);					// get back cntl to shell
 						  break;
 					}
 				  }
