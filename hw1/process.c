@@ -17,10 +17,10 @@
  */
 void launch_process(char *proc_name, char *path, tok_t *argv) {
   /** YOUR CODE HERE */
-	int chld_ifd, chld_ofd, chld_errfd;
+	int cifd, cofd, cerrfd;								// child in,out,err fd's
 	
 	char *buff;
-	buff = malloc(strlen(path)+strlen(proc_name));	  // alloc buff for str to created form two sustrings
+	buff = malloc(strlen(path)+strlen(proc_name)+1);	  // alloc buff for str to created form two sustrings
 	buff = strcpy(buff, path);
 	buff = strcat(buff, "/");
 	pid_t pid = fork();
@@ -31,11 +31,10 @@ void launch_process(char *proc_name, char *path, tok_t *argv) {
 			the terminal, if appropriate.
 			This has to be done both by the shell and in the individual
 			child processes because of potential race conditions. */
-			pid = getpid ();
-			if (pgid == 0) pgid = pid;
-			setpgid (pid, pgid);
+			setpgrp();
 			if (tcgetpgrp(shell_terminal) == shell_pgid)							// do check for fg, set chld get terminal
-				tcsetpgrp (shell_terminal, pgid);
+				tcsetpgrp (shell_terminal, getpgrp());
+			//printf("From Child terminal fg  pgid: %d\n", tcgetpgrp(shell_terminal));
 			/* Set the handling for job control signals back to the default. */
 			signal (SIGINT, SIG_DFL);
 			signal (SIGQUIT, SIG_DFL);
@@ -45,20 +44,20 @@ void launch_process(char *proc_name, char *path, tok_t *argv) {
 			signal (SIGCHLD, SIG_DFL);
 
 			/* Set the standard input/output channels of the new process. */
-			if (chld_ifd != STDIN_FILENO)											// COULD BE ERR HERE ....
+			if (cifd != STDIN_FILENO)											// COULD BE ERR HERE ....
 			{
-			dup2 (chld_ifd, STDIN_FILENO);
-			close (chld_ifd);
+			dup2 (cifd, STDIN_FILENO);
+			close (cifd);
 			}
-			if (chld_ofd != STDOUT_FILENO)
+			if (cofd != STDOUT_FILENO)
 			{
-			dup2 (chld_ofd, STDOUT_FILENO);
-			close (chld_ofd);
+			dup2 (cofd, STDOUT_FILENO);
+			close (cofd);
 			}
-			if (chld_errfd != STDERR_FILENO)
+			if (cerrfd != STDERR_FILENO)
 			{
-			dup2 (chld_errfd, STDERR_FILENO);
-			close (chld_errfd);
+			dup2 (cerrfd, STDERR_FILENO);
+			close (cerrfd);
 			}
 
 			/* Exec the new process. Make sure we exit. */
@@ -73,11 +72,11 @@ void launch_process(char *proc_name, char *path, tok_t *argv) {
 			the terminal, if appropriate.
 			This has to be done both by the shell and in the individual
 			child processes because of potential race conditions. */
-			//pid = getpid ();
-			pgid = pid;																// chld pid returned to prnt
-			setpgid (pid, pgid);													// set for chld proc own process group ID, become procgrp leader
-			if (tcgetpgrp(shell_terminal) == shell_pgid)							// do chek for fg in shell context! also
-				tcsetpgrp (shell_terminal, pgid);
+																				// chld pid returned to prnt
+			setpgid (pid, pid);													// set for chld proc own process group ID, become procgrp leader
+			if (tcgetpgrp(shell_terminal) == shell_pgid)							// do check for fg in shell context! also
+				tcsetpgrp (shell_terminal, getpgid(pid));
+			//printf("From Parent terminal fg  pgid: %d\n", tcgetpgrp(shell_terminal));
 		}
 	}
 
