@@ -241,8 +241,7 @@ int shell(int argc, char *argv[]) {
 				  while ((dep = readdir(dp))){
 					  if(strcmp(dep->d_name, tokens[0]) == 0){
 						  launch_process(tokens[0], path, tokens);
-						  wait(&found);
-						  tcsetpgrp (shell_terminal, shell_pgid);					// get back cntl to shell
+						  found++;					// get back cntl to shell
 						  break;
 					}
 				  }

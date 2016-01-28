@@ -13,8 +13,10 @@ char *freadln(FILE *ifile) {
   char *r = NULL;
   int len;
   char *s = fgets((char *)line, MAXLINE, ifile);
-  if (!s)
+  if (!s){
     return s;
+	printf("violaton");
+  }
   len = strlen(s) + 1;
   r = malloc(len);
   strncpy(r, s, len);
